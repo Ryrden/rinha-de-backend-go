@@ -10,7 +10,7 @@ type ClientRouter struct {
 }
 
 func (c *ClientRouter) Load(r *fiber.App) {
-	r.Get("/clientes/:id/extrato", c.controller.GetClientTransactions)
+	r.Get("/clientes/:id/extrato", c.controller.GetClientExtract)
 	r.Post("/clientes/:id/transacoes", c.controller.CreateTransaction)
 }
 

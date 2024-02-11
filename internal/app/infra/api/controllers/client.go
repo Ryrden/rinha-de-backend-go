@@ -8,8 +8,8 @@ import (
 )
 
 type ClientController struct {
-	createTransaction     *client.CreateTransaction
-	getClientTransactions *client.GetClientTransactions
+	createTransaction *client.CreateTransaction
+	getClientExtract  *client.GetClientExtract
 }
 
 func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
@@ -43,7 +43,7 @@ func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 
 }
 
-func (c *ClientController) GetClientTransactions(ctx fiber.Ctx) error {
+func (c *ClientController) GetClientExtract(ctx fiber.Ctx) error {
 	return ctx.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
 		"error": "not implemented",
 	})
@@ -51,10 +51,10 @@ func (c *ClientController) GetClientTransactions(ctx fiber.Ctx) error {
 
 func NewClientController(
 	createTransaction *client.CreateTransaction,
-	getClientTransactions *client.GetClientTransactions,
+	getClientExtract *client.GetClientExtract,
 ) *ClientController {
 	return &ClientController{
-		createTransaction:     createTransaction,
-		getClientTransactions: getClientTransactions,
+		createTransaction: createTransaction,
+		getClientExtract:  getClientExtract,
 	}
 }

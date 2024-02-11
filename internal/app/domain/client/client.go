@@ -6,8 +6,13 @@ type Client struct {
 	Balance int
 }
 
-func (c *Client) AddTransaction(value int) {
-	c.Balance += value
+func (c *Client) AddTransaction(value int, kind string) {
+	switch kind {
+	case "c":
+		c.Balance += value
+	case "d":
+		c.Balance -= value
+	}
 }
 
 func (c *Client) SubtractTransaction(value int) {
