@@ -1,0 +1,54 @@
+version: "3.5"
+
+services:
+  db:
+    image: postgres:latest
+    hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=rinha
+      - ENABLE_SONIC_JSON=1
+      - CPU_PROFILE=/app/prof/cpu-1.prof
+      - MEM_PROFILE=/app/prof/mem-1.prof
+      - CACHE_HOST=cache
+      - CACHE_PORT=6379
+      - SERVER_PORT=8080
+      - ENABLE_PROFILING=0
+      - ENABLE_PREFORK=0
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+      - ./scripts/postgres/:/docker-entrypoint-initdb.d/
+
+    command:
+      [
+        "postgres",
+        "-c",
+        "config_file=/docker-entrypoint-initdb.d/postgresql.conf",
+      ]
+    deploy:
+      resources:
+        limits:
+          # Note que a soma de todos os limites dos serviços
+          # aqui declarados é de 1.5 unidades de CPU e 550MB
+          # de memória. A distribuição feita aqui é apenas
+          # um exemplo – distribua como quiser.
+          cpus: "0.13"
+          memory: "140MB"
+
+# O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
+# A edição anterior se beneficiou do modo host pois o volume de requisições
+# era relativamente alto e a virtualização da rede se tornou um gargalo, mas
+# este modo é mais complexo de ser configurado. Fique à vontade para usar o
+# modo que quiser desde que não conflite com portas trivialmente usadas em um
+# SO.
+networks:
+  default:
+    driver: bridge
+    name: rinha-nginx-2024q1
+
+
+volumes:
+  postgres-db:
