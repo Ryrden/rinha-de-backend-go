@@ -15,28 +15,11 @@ func (c *Client) AddTransaction(value int, kind string) {
 	}
 }
 
-func (c *Client) SubtractTransaction(value int) {
-	c.Balance -= value
-}
-
-func (c *Client) CanAfford(value int) bool {
-	return c.Balance >= value
-}
-
-func (c *Client) CanAffordWithLimit(value int) bool {
-	return c.Balance+value <= c.Limit
-}
-
-func (c *Client) GetBalance() int {
-	return c.Balance
-}
-
-func (c *Client) GetLimit() int {
-	return c.Limit
-}
-
-func (c *Client) GetID() string {
-	return c.ID
+func (c *Client) CanAfford(value int, kind string) bool {
+	if kind == "d" && c.Balance-value < -c.Limit {
+		return false
+	}
+	return true
 }
 
 func NewClient(id string, limit int, balance int) *Client {

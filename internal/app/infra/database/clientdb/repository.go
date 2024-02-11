@@ -2,7 +2,7 @@ package clientdb
 
 import (
 	"context"
-	"errors"
+	"time"
 
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/jackc/pgx/v5"
@@ -17,23 +17,23 @@ type ClientRepository struct {
 }
 
 func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
-	var client client.Client
+	var clientResult client.Client
 
 	err := c.db.QueryRow(
 		context.Background(),
 		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
 		id,
-	).Scan(&client.ID, &client.Limit, &client.Balance)
+	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, errors.New("client not found")
+			return nil, client.ErrClientNotFound
 		}
 
 		log.Errorf("Error finding client by id: %s", err)
 		return nil, err
 	}
 
-	return &client, nil
+	return &clientResult, nil
 }
 
 func (c *ClientRepository) Update(client *client.Client) error {
@@ -52,12 +52,20 @@ func (c *ClientRepository) Update(client *client.Client) error {
 }
 
 func (c *ClientRepository) CreateTransaction(clientID string, value int, kind string, description string) (*models.ClientTransactionResponse, error) {
-	client, err := c.FindByID(clientID)
+	clientResult, err := c.FindByID(clientID)
 	if err != nil {
 		return nil, err
 	}
-	client.AddTransaction(value, kind)
-	err = c.Update(client)
+	if clientResult == nil {
+		return nil, client.ErrClientNotFound
+	}
+
+	if !clientResult.CanAfford(value, kind) {
+		return nil, client.ErrClientCannotAfford
+	}
+
+	clientResult.AddTransaction(value, kind)
+	err = c.Update(clientResult)
 	if err != nil {
 		return nil, err
 	}
@@ -76,36 +84,59 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	}
 
 	return &models.ClientTransactionResponse{
-		Limit:   client.Limit,
-		Balance: client.Balance,
+		Limit:   clientResult.Limit,
+		Balance: clientResult.Balance,
 	}, nil
 }
 
 func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientExtractResponse, error) {
-	var transactions *models.GetClientExtractResponse
+	var transactions = new(models.GetClientExtractResponse)
+
+	clientResult, err := c.FindByID(clientID)
+	if err != nil {
+		return nil, err
+	}
+	if clientResult == nil {
+		return nil, client.ErrClientNotFound
+	}
+	transactions.Balance = models.Balance{
+		Total:       clientResult.Balance,
+		ExtractedAt: time.Now().Format("2006-01-02T15:04:05.000000Z"),
+		Limit:       clientResult.Limit,
+	}
 
 	rows, err := c.db.Query(
 		context.Background(),
-		"SELECT id, value, kind, description FROM transactions WHERE client_id = $1",
+		"SELECT amount, kind, description, created_at FROM transactions WHERE client_id = $1 ORDER BY created_at DESC LIMIT 10",
 		clientID,
 	)
+
 	if err != nil {
-		log.Errorf("Error getting client transactions: %s", err)
+		log.Errorf("Error getting client extract: %s", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	// for rows.Next() {
-	// 	var transaction models.Transaction
+	transactions.Transactions = make([]models.Transaction, 0)
+	for rows.Next() {
+		var amount int
+		var kind string
+		var description string
+		var createdAt time.Time
 
-	// 	err := rows.Scan(&transaction.ID, &transaction.Value, &transaction.Kind, &transaction.Description)
-	// 	if err != nil {
-	// 		log.Errorf("Error scanning transaction: %s", err)
-	// 		return nil, err
-	// 	}
+		if err := rows.Scan(&amount, &kind, &description, &createdAt); err != nil {
+			log.Errorf("Error scanning transaction: %s", err)
+			return nil, err
+		}
 
-	// 	transactions = append(transactions, &transaction)
-	// }
+		var transaction models.Transaction
+		transaction.Value = amount
+		transaction.Kind = kind
+		transaction.Description = description
+		transaction.CreatedAt = createdAt.Format("2006-01-02T15:04:05.000000Z")
+
+		transactions.Transactions = append(transactions.Transactions, transaction)
+	}
 
 	return transactions, nil
 }
