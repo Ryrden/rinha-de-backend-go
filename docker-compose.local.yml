@@ -8,20 +8,11 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=rinha
-      - ENABLE_SONIC_JSON=1
-      - CPU_PROFILE=/app/prof/cpu-1.prof
-      - MEM_PROFILE=/app/prof/mem-1.prof
-      - CACHE_HOST=cache
-      - CACHE_PORT=6379
-      - SERVER_PORT=8080
-      - ENABLE_PROFILING=0
-      - ENABLE_PREFORK=0
     ports:
       - "5432:5432"
     volumes:
       - postgres-db:/var/lib/postgresql/data
       - ./scripts/postgres/:/docker-entrypoint-initdb.d/
-
     command:
       [
         "postgres",
@@ -37,6 +28,20 @@ services:
           # um exemplo – distribua como quiser.
           cpus: "0.13"
           memory: "140MB"
+      
+  cache:
+    image: redis:latest
+    hostname: cache
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "0.5GB"
 
 # O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
 # A edição anterior se beneficiou do modo host pois o volume de requisições

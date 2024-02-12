@@ -6,8 +6,9 @@ import (
 )
 
 var Module = fx.Provide(
-	// TODO: Add the NewDispatcher function to the list of providers
-	//NewDispatcher,
+	NewCache,
+	NewDispatcher,
+	NewJobQueue,
 	fx.Annotate(
 		NewClientRepository,
 		fx.As(new(client.Repository)),

@@ -36,8 +36,6 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			log.Fatalf("Error connecting to the database: %s\n", err)
 		}
 
-		// TODO: warnup
-
 		if err := db.Ping(context.Background()); err != nil {
 			log.Fatalf("Error pinging the database: %s\n", err)
 		}

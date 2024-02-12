@@ -4,6 +4,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/config"
 )
 
@@ -29,6 +30,10 @@ func MakeRouter(
 	}
 
 	r := fiber.New(cfg)
+
+	r.Use(logger.New(logger.Config{
+		Format: "${pid} ${locals:requestid} ${status} - ${method} ${path}​\n",
+	}))
 
 	clientRouter.Load(r)
 

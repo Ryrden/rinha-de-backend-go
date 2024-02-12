@@ -23,7 +23,7 @@ func NewServer(
 
 				// TODO: Profilling
 
-				addr := fmt.Sprintf("127.0.0.1:%s", config.Server.Port)
+				addr := fmt.Sprintf(":%s", config.Server.Port)
 				if err := router.Listen(addr); err != nil {
 					log.Fatalf("Error starting the server: %s\n", err)
 				}

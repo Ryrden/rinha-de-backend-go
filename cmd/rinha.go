@@ -12,6 +12,7 @@ import (
 	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/api/routers"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/config"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/database"
+	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/database/clientdb"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/fx"
 )
@@ -32,11 +33,11 @@ func main() {
 		api.Module,
 		database.Module,
 		client.Module,
-		// fx.Invoke(func(dispatcher *clientdb.Dispatcher) {
-		// 	go dispatcher.Run()
-		// }),
+		fx.Invoke(func(dispatcher *clientdb.Dispatcher) {
+			go dispatcher.Run()
+		}),
 		fx.Invoke(func(*fasthttp.Server) {}),
-		//fx.NopLogger,
+		// fx.NopLogger,
 	)
 
 	app.Run()
