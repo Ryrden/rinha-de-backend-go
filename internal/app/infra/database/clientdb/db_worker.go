@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	MaxWorker = 1
-	MaxQueue  = 1
+	MaxWorker = 5
+	MaxQueue  = 10
 )
 
 type JobQueue chan Job
@@ -102,7 +102,6 @@ func (w Worker) processInsert(insertCh chan []Job) {
 		case jobs := <-insertCh:
 			for _, job := range jobs {
 				transactionData := job.Payload
-				// Aqui você faz a inserção direta no banco de dados, sem usar o ClientRepository.
 				_, err := w.db.Exec(
 					context.Background(),
 					"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",

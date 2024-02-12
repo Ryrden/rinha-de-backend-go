@@ -112,6 +112,11 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		return nil, err
 	}
 
+	err = c.cache.InvalidateClientExtract(clientID)
+	if err != nil {
+		log.Warnf("Error invalidating client extract in cache: %s, error: %s", clientID, err)
+	}
+
 	log.Infof("Transaction successfully created for client ID: %s, value: %d, kind: %s", clientID, value, kind)
 	return &models.ClientTransactionResponse{
 		Limit:   clientResult.Limit,
@@ -123,6 +128,14 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	log.Infof("Starting to get client extract for clientID: %s", clientID)
 
 	var transactions = new(models.GetClientExtractResponse)
+
+	cachedClientExtract, err := c.cache.GetClientExtract(clientID)
+	if err == nil && cachedClientExtract != nil {
+		log.Infof("Client extract found in cache: %s", clientID)
+		return cachedClientExtract, nil
+	} else if err != nil {
+		log.Warnf("Failed to get client extract from cache: %s, error: %s", clientID, err)
+	}
 
 	clientResult, err := c.FindByID(clientID)
 	if err != nil {
@@ -171,6 +184,11 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 		}
 
 		transactions.Transactions = append(transactions.Transactions, transaction)
+	}
+
+	err = c.cache.SetClientExtract(clientID, transactions)
+	if err != nil {
+		log.Warnf("Error setting client extract in cache: %s, error: %s", clientID, err)
 	}
 
 	log.Infof("Successfully retrieved client extract for clientID: %s", clientID)

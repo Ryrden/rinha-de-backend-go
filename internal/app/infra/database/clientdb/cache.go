@@ -9,6 +9,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/redis/rueidis"
+	"github.com/ryrden/rinha-de-backend-go/internal/app/data/models"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/domain/client"
 )
 
@@ -65,6 +66,76 @@ func (p *Cache) Set(client *client.Client) error {
 	}
 
 	return nil
+}
+
+func (p *Cache) SetClientExtract(clientID string, extract *models.GetClientExtractResponse) error {
+	item, err := sonic.MarshalString(extract)
+	if err != nil {
+		return err
+	}
+
+	setclientCmd := p.client.
+		B().
+		Set().
+		Key("client:" + clientID + ":extract").
+		Value(item).
+		Ex(time.Minute).
+		Build()
+
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, setclientCmd)
+
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Cache) InvalidateClientExtract(clientID string) error {
+	delCmd := p.client.
+		B().
+		Del().
+		Key("client:" + clientID + ":extract").
+		Build()
+
+	cmds := make(rueidis.Commands, 0, 2)
+	cmds = append(cmds, delCmd)
+
+	for _, res := range p.client.DoMulti(ctx, cmds...) {
+		err := res.Error()
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Cache) GetClientExtract(clientID string) (*models.GetClientExtractResponse, error) {
+	getCmd := p.client.
+		B().
+		Get().
+		Key("client:" + clientID + ":extract").
+		Build()
+
+	transactionsBytes, err := p.client.Do(ctx, getCmd).AsBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	var transactions *models.GetClientExtractResponse
+	err = sonic.Unmarshal(transactionsBytes, &transactions)
+	if err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
 }
 
 func NewCache() *Cache {

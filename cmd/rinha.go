@@ -37,7 +37,7 @@ func main() {
 			go dispatcher.Run()
 		}),
 		fx.Invoke(func(*fasthttp.Server) {}),
-		// fx.NopLogger,
+		fx.NopLogger,
 	)
 
 	app.Run()

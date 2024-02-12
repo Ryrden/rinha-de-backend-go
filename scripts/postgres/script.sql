@@ -24,3 +24,9 @@ VALUES
 ('les cruders', 10000 * 100),
 ('padaria joia de cocaia', 100000 * 100),
 ('kid mais', 5000 * 100);
+
+
+-- Index client_id and created_at columns
+
+CREATE INDEX IF NOT EXISTS transactions_client_id_idx ON transactions(client_id);
+CREATE INDEX IF NOT EXISTS transactions_created_at_idx ON transactions(created_at);
