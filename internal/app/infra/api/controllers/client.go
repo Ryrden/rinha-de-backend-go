@@ -22,7 +22,7 @@ func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 	// if id is not a integer, return a 400 status code
 	if _, err := strconv.Atoi(id); err != nil {
 		log.Warnf("Invalid client ID: %s", id)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"error": "Invalid client ID",
 		})
 	}
@@ -32,7 +32,7 @@ func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 
 	if err := ctx.Bind().Body(&dto); err != nil {
 		log.Errorf("Error parsing request body for CreateTransaction, client ID: %s, error: %s", id, err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"error": "Invalid request format",
 		})
 	}
@@ -73,7 +73,7 @@ func (c *ClientController) GetClientExtract(ctx fiber.Ctx) error {
 	id := ctx.Params("id")
 	if _, err := strconv.Atoi(id); err != nil {
 		log.Warnf("Invalid client ID: %s", id)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"error": "Invalid client ID",
 		})
 	}
