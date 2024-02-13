@@ -35,8 +35,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.4"
-          memory: "170MB"
+          cpus: "0.5"
+          memory: "195MB"
 
   api02:
     # Essa sintaxe reusa o que foi declarado em 'api01'.
@@ -46,6 +46,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
 
   nginx:
     image: nginx:latest
@@ -61,7 +62,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: "30MB"
+          memory: "25MB"
 
   db:
     image: postgres:latest
@@ -92,22 +93,8 @@ services:
           # aqui declarados é de 1.5 unidades de CPU e 550MB
           # de memória. A distribuição feita aqui é apenas
           # um exemplo – distribua como quiser.
-          cpus: "0.5"
-          memory: "170MB"
-  
-  cache:
-    image: redis:latest
-    hostname: cache
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./scripts/redis/:/etc/redis/
-    command: ["redis-server", "/etc/redis/redis.conf"]
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: "10MB"
+          cpus: "0.4"
+          memory: "125MB"
 
 # O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
 # A edição anterior se beneficiou do modo host pois o volume de requisições

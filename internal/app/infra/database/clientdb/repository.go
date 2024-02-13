@@ -12,9 +12,8 @@ import (
 )
 
 type ClientRepository struct {
-	db *pgxpool.Pool
-	// TODO: add cache and jobQueue
-	cache *Cache
+	db       *pgxpool.Pool
+	jobQueue JobQueue
 }
 
 func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
@@ -22,33 +21,20 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 
 	var clientResult client.Client
 
-	cachedClient, err := c.cache.Get(id)
-	if err == nil && cachedClient != nil {
-		log.Infof("Client found in cache: %s", id)
-		return cachedClient, nil
-	} else if err != nil {
-		log.Warnf("Failed to get client from cache: %s, error: %s", id, err)
-	}
 
 	log.Infof("Fetching client from database: %s", id)
-	err = c.db.QueryRow(
+	err := c.db.QueryRow(
 		context.Background(),
 		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
 		id,
 	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			log.Warnf("Client not found for id: %s", id)
 			return nil, client.ErrClientNotFound
 		}
 
 		log.Errorf("Error finding client by ID: %s, error: %s", id, err)
 		return nil, err
-	}
-
-	err = c.cache.Set(&clientResult)
-	if err != nil {
-		log.Warnf("Error setting client in cache: %s, error: %s", id, err)
 	}
 
 	log.Infof("Client successfully found and returned: %s", id)
@@ -67,11 +53,6 @@ func (c *ClientRepository) Update(client *client.Client) error {
 		return err
 	}
 
-	err = c.cache.Set(client)
-	if err != nil {
-		log.Errorf("Error setting client in cache: %s", err)
-	}
-
 	return nil
 }
 
@@ -79,11 +60,9 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Creating transaction for client %s", clientID)
 	clientResult, err := c.FindByID(clientID)
 	if err != nil {
-		log.Errorf("Error finding client by id: %s: error: %s", clientID, err)
 		return nil, err
 	}
 	if clientResult == nil {
-		log.Infof("Client not found with id %s", clientID)
 		return nil, client.ErrClientNotFound
 	}
 
@@ -99,23 +78,16 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		return nil, err
 	}
 
-	_, err = c.db.Exec(
-		context.Background(),
-		"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
-		clientID,
-		value,
-		kind,
-		description,
-	)
-	if err != nil {
-		log.Errorf("Error creating transaction for client ID: %s, error: %s", clientID, err)
-		return nil, err
+	job := Job{
+		Payload: &ClientTransactionPayload{
+			Client:      clientResult,
+			Value:       value,
+			Kind:        kind,
+			Description: description,
+		},
 	}
 
-	err = c.cache.InvalidateClientExtract(clientID)
-	if err != nil {
-		log.Warnf("Error invalidating client extract in cache: %s, error: %s", clientID, err)
-	}
+	c.jobQueue <- job
 
 	log.Infof("Transaction successfully created for client ID: %s, value: %d, kind: %s", clientID, value, kind)
 	return &models.ClientTransactionResponse{
@@ -129,21 +101,11 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 
 	var transactions = new(models.GetClientExtractResponse)
 
-	cachedClientExtract, err := c.cache.GetClientExtract(clientID)
-	if err == nil && cachedClientExtract != nil {
-		log.Infof("Client extract found in cache: %s", clientID)
-		return cachedClientExtract, nil
-	} else if err != nil {
-		log.Warnf("Failed to get client extract from cache: %s, error: %s", clientID, err)
-	}
-
 	clientResult, err := c.FindByID(clientID)
 	if err != nil {
-		log.Errorf("Error finding client by ID: %s, error: %s", clientID, err)
 		return nil, err
 	}
 	if clientResult == nil {
-		log.Errorf("Client not found with ID: %s", clientID) // This might be redundant due to FindByID already handling not found error
 		return nil, client.ErrClientNotFound
 	}
 	transactions.Balance = models.Balance{
@@ -186,15 +148,10 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 		transactions.Transactions = append(transactions.Transactions, transaction)
 	}
 
-	err = c.cache.SetClientExtract(clientID, transactions)
-	if err != nil {
-		log.Warnf("Error setting client extract in cache: %s, error: %s", clientID, err)
-	}
-
 	log.Infof("Successfully retrieved client extract for clientID: %s", clientID)
 	return transactions, nil
 }
 
-func NewClientRepository(db *pgxpool.Pool, cache *Cache) client.Repository {
-	return &ClientRepository{db: db, cache: cache}
+func NewClientRepository(db *pgxpool.Pool, jobQueue JobQueue) client.Repository {
+	return &ClientRepository{db: db, jobQueue: jobQueue}
 }

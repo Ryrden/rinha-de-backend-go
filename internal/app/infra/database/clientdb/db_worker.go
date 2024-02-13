@@ -6,11 +6,12 @@ import (
 
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ryrden/rinha-de-backend-go/internal/app/domain/client"
 )
 
 var (
-	MaxWorker = 5
-	MaxQueue  = 10
+	MaxWorker = 9
+	MaxQueue  = 3
 )
 
 type JobQueue chan Job
@@ -21,7 +22,7 @@ type Job struct {
 }
 
 type ClientTransactionPayload struct {
-	ID          string
+	Client      *client.Client
 	Value       int
 	Kind        string
 	Description string
@@ -74,9 +75,9 @@ func (w Worker) bootstrap(dataCh chan Job) {
 
 func (w Worker) processData(dataCh chan Job, insertCh chan []Job) {
 	tickInsertRate := time.Duration(10 * time.Second)
-	tickInsert := time.Tick(tickInsertRate)
+	tickInsert := time.NewTicker(tickInsertRate).C
 
-	batchMaxSize := 10000
+	batchMaxSize := 5000
 	batch := make([]Job, 0, batchMaxSize)
 
 	for {
@@ -105,7 +106,7 @@ func (w Worker) processInsert(insertCh chan []Job) {
 				_, err := w.db.Exec(
 					context.Background(),
 					"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
-					transactionData.ID,
+					transactionData.Client.ID,
 					transactionData.Value,
 					transactionData.Kind,
 					transactionData.Description,
@@ -113,7 +114,10 @@ func (w Worker) processInsert(insertCh chan []Job) {
 				if err != nil {
 					log.Errorf("Error on insert transaction: %v", err)
 				}
+				log.Infof("Transaction inserted successfully")
 			}
+		case <-w.quit:
+			return
 		}
 	}
 }
