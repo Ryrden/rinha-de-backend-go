@@ -13,6 +13,7 @@ import (
 
 type ClientRepository struct {
 	db       *pgxpool.Pool
+	cache    *Cache
 	jobQueue JobQueue
 }
 
@@ -20,10 +21,14 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 	log.Infof("Attempting to find client by ID: %s", id)
 
 	var clientResult client.Client
-
+	cachedClient, err := c.cache.GetClient(id)
+	if err == nil {
+		log.Infof("Client found in cache: %s", id)
+		return cachedClient, nil
+	}
 
 	log.Infof("Fetching client from database: %s", id)
-	err := c.db.QueryRow(
+	err = c.db.QueryRow(
 		context.Background(),
 		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
 		id,
@@ -36,6 +41,8 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 		log.Errorf("Error finding client by ID: %s, error: %s", id, err)
 		return nil, err
 	}
+
+	c.cache.SetClient(&clientResult)
 
 	log.Infof("Client successfully found and returned: %s", id)
 	return &clientResult, nil
@@ -53,6 +60,8 @@ func (c *ClientRepository) Update(client *client.Client) error {
 		return err
 	}
 
+	c.cache.SetClient(client)
+
 	return nil
 }
 
@@ -61,9 +70,6 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	clientResult, err := c.FindByID(clientID)
 	if err != nil {
 		return nil, err
-	}
-	if clientResult == nil {
-		return nil, client.ErrClientNotFound
 	}
 
 	if !clientResult.CanAfford(value, kind) {
@@ -105,12 +111,10 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	if err != nil {
 		return nil, err
 	}
-	if clientResult == nil {
-		return nil, client.ErrClientNotFound
-	}
+
 	transactions.Balance = models.Balance{
 		Total:       clientResult.Balance,
-		ExtractedAt: time.Now().Format("2006-01-02T15:04:05.000000Z"),
+		ExtractedAt: time.Now().Format(time.RFC3339),
 		Limit:       clientResult.Limit,
 	}
 
@@ -152,6 +156,10 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	return transactions, nil
 }
 
-func NewClientRepository(db *pgxpool.Pool, jobQueue JobQueue) client.Repository {
-	return &ClientRepository{db: db, jobQueue: jobQueue}
+func NewClientRepository(db *pgxpool.Pool, jobQueue JobQueue, cache *Cache) client.Repository {
+	return &ClientRepository{
+		db:       db,
+		jobQueue: jobQueue,
+		cache:    cache,
+	}
 }

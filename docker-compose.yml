@@ -93,8 +93,23 @@ services:
           # aqui declarados é de 1.5 unidades de CPU e 550MB
           # de memória. A distribuição feita aqui é apenas
           # um exemplo – distribua como quiser.
-          cpus: "0.4"
+          cpus: "0.35"
           memory: "125MB"
+  
+  cache:
+    image: redis:latest
+    hostname: cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./scripts/redis/:/etc/redis/
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: "10MB"
+
 
 # O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
 # A edição anterior se beneficiou do modo host pois o volume de requisições
