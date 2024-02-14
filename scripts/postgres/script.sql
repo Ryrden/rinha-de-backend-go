@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
 CREATE TABLE IF NOT EXISTS clients (
     id SERIAL PRIMARY KEY, 
     client_name text NOT NULL,
@@ -11,8 +9,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id integer NOT NULL,
     amount integer NOT NULL,
-    kind char NOT NULL CHECK (kind IN ('c', 'd')), -- 'c' para crédito, 'd' para débito
-    description text NOT NULL CHECK (char_length(description) >= 1 AND char_length(description) <= 10),
+    kind char NOT NULL,
+    description text NOT NULL,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );

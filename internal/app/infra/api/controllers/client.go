@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/data/models"
@@ -14,6 +13,31 @@ import (
 type ClientController struct {
 	createTransaction *client.CreateTransaction
 	getClientExtract  *client.GetClientExtract
+}
+
+func (c *ClientController) validate(dto models.CreateTransactionRequest) error {
+	/*
+		NOTE: VALIDATOR PACKAGE USE REGEX TO COMPARE STRING EVEN IF IS ONLY A CHAR!!!
+		Thus, I removed the validator package and implemented the validation manually
+		Conclusion: "If is possible check something without regex, do it!"
+	*/
+	// all fields are required
+	if dto.Value == nil || dto.Kind == nil || dto.Description == nil {
+		return errors.New("missing required fields")
+	}
+
+	if *dto.Value <= 0 {
+		return errors.New("value must be greater than 0")
+	}
+
+	if *dto.Kind != "c" && *dto.Kind != "d" {
+		return errors.New("kind must be 'c' or 'd'")
+	}
+
+	if len(*dto.Description) < 1 || len(*dto.Description) > 10 {
+		return errors.New("description must be between 1 and 10 characters")
+	}
+	return nil
 }
 
 func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
@@ -37,15 +61,23 @@ func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 		})
 	}
 
-	validator := validator.New()
-	if err := validator.Struct(dto); err != nil {
+	// OLD VALIDATION USING VALIDATOR PACKAGE
+	// validator := validator.New()
+	// if err := validator.Struct(dto); err != nil {
+	// 	log.Warnf("Validation failed for CreateTransaction, client ID: %s, error: %s", id, err)
+	// 	return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+	// 		"error": "Validation failed",
+	// 	})
+	// }
+
+	if err := c.validate(dto); err != nil {
 		log.Warnf("Validation failed for CreateTransaction, client ID: %s, error: %s", id, err)
 		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
 			"error": "Validation failed",
 		})
 	}
 
-	clientResult, err := c.createTransaction.Execute(id, dto.Value, dto.Kind, dto.Description)
+	clientResult, err := c.createTransaction.Execute(id, *dto.Value, *dto.Kind, *dto.Description)
 	if err != nil {
 		if errors.Is(err, client.ErrClientCannotAfford) {
 			log.Warnf("Client cannot afford transaction, client ID: %s, error: %s", id, err)

@@ -24,27 +24,30 @@ func NewServer(
 			go func() {
 				log.Info("Starting the server...")
 
-				cpuProfFile, err := os.Create(config.Profiling.CPU)
-				if err != nil {
-					log.Fatalf("Error starting the server: %s\n", err)
+				if config.Profiling.Enabled {
+					log.Info("Starting CPU and Memory profiling...")
+					cpuProfFile, err := os.Create(config.Profiling.CPU)
+					if err != nil {
+						log.Fatalf("Error starting the server: %s\n", err)
+					}
+					pprof.StartCPUProfile(cpuProfFile)
+
+					memProfFile, err := os.Create(config.Profiling.Mem)
+					if err != nil {
+						log.Fatalf("Error starting the server: %s\n", err)
+					}
+					pprof.WriteHeapProfile(memProfFile)
+					
+					after := time.After(4 * time.Minute)
+
+					go func() {
+						<-after
+						log.Info("Stopping CPU and Memory profiling...")
+						pprof.StopCPUProfile()
+						cpuProfFile.Close()
+						memProfFile.Close()
+					}()
 				}
-				pprof.StartCPUProfile(cpuProfFile)
-
-				memProfFile, err := os.Create(config.Profiling.Mem)
-				if err != nil {
-					log.Fatalf("Error starting the server: %s\n", err)
-				}
-				pprof.WriteHeapProfile(memProfFile)
-
-				after := time.After(4 * time.Minute)
-
-				go func() {
-					<-after
-					log.Info("Stopping the server...")
-					pprof.StopCPUProfile()
-					cpuProfFile.Close()
-					memProfFile.Close()
-				}()
 
 				addr := fmt.Sprintf(":%s", config.Server.Port)
 				if err := router.Listen(addr); err != nil {
