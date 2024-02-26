@@ -9,46 +9,47 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/redis/rueidis"
+	"github.com/ryrden/rinha-de-backend-go/internal/app/data/models"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/domain/client"
 )
 
 var ctx = context.Background()
 
 type Cache struct {
-	client rueidis.Client
+	extract rueidis.Client
 }
 
-func (p *Cache) GetClient(key string) (*client.Client, error) {
-	getCmd := p.client.
+func (c *Cache) GetExtract(key string) (*models.GetClientExtractResponse, error) {
+	getCmd := c.extract.
 		B().
 		Get().
-		Key("client:" + key).
+		Key("clientExtract:" + key).
 		Build()
 
-	clientBytes, err := p.client.Do(ctx, getCmd).AsBytes()
+	clientExtractBytes, err := c.extract.Do(ctx, getCmd).AsBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	var client client.Client
-	err = sonic.Unmarshal(clientBytes, &client)
+	var clientExtract models.GetClientExtractResponse
+	err = sonic.Unmarshal(clientExtractBytes, &clientExtract)
 	if err != nil {
 		return nil, err
 	}
 
-	return &client, nil
+	return &clientExtract, nil
 }
 
-func (p *Cache) SetClient(client *client.Client) error {
+func (p *Cache) SetExtract(client *client.Client) error {
 	item, err := sonic.MarshalString(client)
 	if err != nil {
 		return err
 	}
 
-	setclientCmd := p.client.
+	setclientCmd := p.extract.
 		B().
 		Set().
-		Key("client:" + client.ID).
+		Key("clientExtract:" + client.ID).
 		Value(item).
 		Ex(5 * time.Second).
 		Build()
@@ -56,7 +57,7 @@ func (p *Cache) SetClient(client *client.Client) error {
 	cmds := make(rueidis.Commands, 0, 2)
 	cmds = append(cmds, setclientCmd)
 
-	for _, res := range p.client.DoMulti(ctx, cmds...) {
+	for _, res := range p.extract.DoMulti(ctx, cmds...) {
 		err := res.Error()
 
 		if err != nil {
@@ -85,5 +86,5 @@ func NewCache() *Cache {
 	}
 
 	log.Infof("Redis client created, connected to %s:%s", os.Getenv("CACHE_HOST"), os.Getenv("CACHE_PORT"))
-	return &Cache{client: client}
+	return &Cache{extract: client}
 }

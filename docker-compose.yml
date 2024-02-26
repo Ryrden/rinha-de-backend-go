@@ -4,7 +4,7 @@ services:
   api01: &api
     # Lembre-se de que seu serviço HTTP deve estar hospedado num repositório
     # publicamente acessível! Ex.: hub.docker.com
-    image: ryrden/rinha-de-backend-go:main
+    image: ryrden/rinha-de-backend-go:latest
     restart: always
     hostname: api01
     environment:
@@ -35,8 +35,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: "195MB"
+          cpus: "0.4"
+          memory: "150MB"
 
   api02:
     # Essa sintaxe reusa o que foi declarado em 'api01'.
@@ -62,7 +62,7 @@ services:
       resources:
         limits:
           cpus: "0.1"
-          memory: "25MB"
+          memory: "40MB"
 
   db:
     image: postgres:latest
@@ -93,8 +93,8 @@ services:
           # aqui declarados é de 1.5 unidades de CPU e 550MB
           # de memória. A distribuição feita aqui é apenas
           # um exemplo – distribua como quiser.
-          cpus: "0.35"
-          memory: "125MB"
+          cpus: "0.55"
+          memory: "200MB"
   
   cache:
     image: redis:latest

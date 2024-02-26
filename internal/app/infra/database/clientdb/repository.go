@@ -21,14 +21,9 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 	log.Infof("Attempting to find client by ID: %s", id)
 
 	var clientResult client.Client
-	cachedClient, err := c.cache.GetClient(id)
-	if err == nil {
-		log.Infof("Client found in cache: %s", id)
-		return cachedClient, nil
-	}
 
 	log.Infof("Fetching client from database: %s", id)
-	err = c.db.QueryRow(
+	err := c.db.QueryRow(
 		context.Background(),
 		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
 		id,
@@ -42,32 +37,62 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 		return nil, err
 	}
 
-	c.cache.SetClient(&clientResult)
+	log.Infof("Client successfully found and returned: %s", id)
+	return &clientResult, nil
+}
+
+func (c *ClientRepository) FindByIDWithTransaction(tx pgx.Tx, id string) (*client.Client, error) {
+	log.Infof("Attempting to find client by ID: %s", id)
+
+	var clientResult client.Client
+
+	log.Infof("Fetching client from database: %s", id)
+	err := tx.QueryRow(
+		context.Background(),
+		"SELECT id, balance_limit, balance FROM clients WHERE id = $1 FOR UPDATE", // Pessimist locking with "FOR UPDATE"
+		id,
+	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, client.ErrClientNotFound
+		}
+
+		log.Errorf("Error finding client by ID: %s, error: %s", id, err)
+		return nil, err
+	}
 
 	log.Infof("Client successfully found and returned: %s", id)
 	return &clientResult, nil
 }
 
-func (c *ClientRepository) Update(client *client.Client) error {
-	_, err := c.db.Exec(
+func (c *ClientRepository) UpdateBalance(tx pgx.Tx, client *client.Client) error {
+	err := tx.QueryRow(
 		context.Background(),
-		"UPDATE clients SET balance = $1 WHERE id = $2",
+		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
 		client.Balance,
 		client.ID,
-	)
+	).Scan(&client.Balance)
 	if err != nil {
 		log.Errorf("Error updating client: %s", err)
 		return err
 	}
-
-	c.cache.SetClient(client)
 
 	return nil
 }
 
 func (c *ClientRepository) CreateTransaction(clientID string, value int, kind string, description string) (*models.ClientTransactionResponse, error) {
 	log.Infof("Creating transaction for client %s", clientID)
-	clientResult, err := c.FindByID(clientID)
+
+	// Start a transaction
+	tx, err := c.db.Begin(context.Background())
+	if err != nil {
+		log.Errorf("Error starting transaction: %s", err)
+		return nil, err
+	}
+	defer tx.Rollback(context.Background())
+
+	// Fetch client from database
+	clientResult, err := c.FindByIDWithTransaction(tx, clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,23 +102,33 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		return nil, client.ErrClientCannotAfford
 	}
 
+	// Update client balance
 	clientResult.AddTransaction(value, kind)
-	err = c.Update(clientResult)
+	err = c.UpdateBalance(tx, clientResult)
 	if err != nil {
 		log.Errorf("Error updating client: %s, error: %s", clientID, err)
 		return nil, err
 	}
 
-	job := Job{
-		Payload: &ClientTransactionPayload{
-			Client:      clientResult,
-			Value:       value,
-			Kind:        kind,
-			Description: description,
-		},
+	// Insert a transcation record
+	_, err = c.db.Exec(
+		context.Background(),
+		"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
+		clientID,
+		value,
+		kind,
+		description,
+	)
+	if err != nil {
+		log.Errorf("Error creating transaction for client ID: %s, error: %s", clientID, err)
+		return nil, err
 	}
 
-	c.jobQueue <- job
+	err = tx.Commit(context.Background())
+	if err != nil {
+		log.Errorf("Error committing transaction: %s", err)
+		return nil, err
+	}
 
 	log.Infof("Transaction successfully created for client ID: %s, value: %d, kind: %s", clientID, value, kind)
 	return &models.ClientTransactionResponse{

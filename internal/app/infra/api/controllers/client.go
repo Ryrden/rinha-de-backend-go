@@ -42,8 +42,6 @@ func (c *ClientController) validate(dto models.CreateTransactionRequest) error {
 
 func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 	id := ctx.Params("id")
-	// verify if id is a integer
-	// if id is not a integer, return a 400 status code
 	if _, err := strconv.Atoi(id); err != nil {
 		log.Warnf("Invalid client ID: %s", id)
 		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	MaxWorker = 9
+	MaxWorker = 8
 	MaxQueue  = 3
 )
 
@@ -39,7 +39,7 @@ type Worker struct {
 	WorkerPool chan chan Job
 	JobChannel chan Job
 	quit       chan bool
-	db         *pgxpool.Pool
+	dbPool     *pgxpool.Pool
 }
 
 func (w Worker) Start() {
@@ -103,7 +103,7 @@ func (w Worker) processInsert(insertCh chan []Job) {
 		case jobs := <-insertCh:
 			for _, job := range jobs {
 				transactionData := job.Payload
-				_, err := w.db.Exec(
+				_, err := w.dbPool.Exec(
 					context.Background(),
 					"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
 					transactionData.Client.ID,
@@ -127,7 +127,7 @@ func NewWorker(workerPool chan chan Job, db *pgxpool.Pool) Worker {
 		WorkerPool: workerPool,
 		JobChannel: make(chan Job),
 		quit:       make(chan bool),
-		db:         db,
+		dbPool:     db,
 	}
 }
 
@@ -136,7 +136,7 @@ type Dispatcher struct {
 	// A pool of workers channels that are registered with the dispatcher
 	WorkerPool chan chan Job
 	jobQueue   chan Job
-	db         *pgxpool.Pool
+	dbPool     *pgxpool.Pool
 }
 
 func NewDispatcher(db *pgxpool.Pool, jobQueue JobQueue) *Dispatcher {
@@ -148,14 +148,14 @@ func NewDispatcher(db *pgxpool.Pool, jobQueue JobQueue) *Dispatcher {
 		WorkerPool: pool,
 		maxWorkers: maxWorkers,
 		jobQueue:   jobQueue,
-		db:         db,
+		dbPool:     db,
 	}
 }
 
 func (d *Dispatcher) Run() {
 	// starting n number of workers
 	for i := 0; i < d.maxWorkers; i++ {
-		worker := NewWorker(d.WorkerPool, d.db)
+		worker := NewWorker(d.WorkerPool, d.dbPool)
 		worker.Start()
 	}
 

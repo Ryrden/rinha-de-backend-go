@@ -31,6 +31,8 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			log.Fatalf("Error parsing the connection URL: %s\n", err)
 		}
 
+		// poolConfig.MaxConns = 10
+
 		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err != nil {
 			log.Fatalf("Error connecting to the database: %s\n", err)
