@@ -82,7 +82,7 @@ func NewCache() *Cache {
 	client, err := rueidis.NewClient(opts)
 	if err != nil {
 		log.Errorf("Failed to create Redis client: %v", err)
-		panic(err)
+		
 	}
 
 	log.Infof("Redis client created, connected to %s:%s", os.Getenv("CACHE_HOST"), os.Getenv("CACHE_PORT"))

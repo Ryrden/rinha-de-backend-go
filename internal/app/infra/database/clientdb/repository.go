@@ -66,6 +66,7 @@ func (c *ClientRepository) FindByIDWithTransaction(tx pgx.Tx, id string) (*clien
 }
 
 func (c *ClientRepository) UpdateBalance(tx pgx.Tx, client *client.Client) error {
+	log.Infof("Updating client balance: %s", client.ID)
 	err := tx.QueryRow(
 		context.Background(),
 		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
@@ -77,6 +78,7 @@ func (c *ClientRepository) UpdateBalance(tx pgx.Tx, client *client.Client) error
 		return err
 	}
 
+	log.Infof("Client balance successfully updated: %s", client.ID)
 	return nil
 }
 
@@ -84,6 +86,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Creating transaction for client %s", clientID)
 
 	// Start a transaction
+	log.Info("Starting transaction")
 	tx, err := c.db.Begin(context.Background())
 	if err != nil {
 		log.Errorf("Error starting transaction: %s", err)
@@ -97,6 +100,8 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		return nil, err
 	}
 
+	// Check if client can afford the transaction
+	log.Infof("Checking if client can afford the transaction: %s, value: %d, kind: %s", clientID, value, kind)
 	if !clientResult.CanAfford(value, kind) {
 		log.Infof("Client cannot afford the transaction: %s, value: %d, kind: %s", clientID, value, kind)
 		return nil, client.ErrClientCannotAfford
@@ -111,7 +116,8 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	}
 
 	// Insert a transcation record
-	_, err = c.db.Exec(
+	log.Infof("Inserting transaction record for client: %s, value: %d, kind: %s", clientID, value, kind)
+	_, err = tx.Exec(
 		context.Background(),
 		"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
 		clientID,
@@ -124,6 +130,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		return nil, err
 	}
 
+	log.Info("Committing transaction")
 	err = tx.Commit(context.Background())
 	if err != nil {
 		log.Errorf("Error committing transaction: %s", err)

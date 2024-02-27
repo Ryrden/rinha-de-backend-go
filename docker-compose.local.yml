@@ -33,7 +33,7 @@ services:
     image: redis:latest
     hostname: cache
     ports:
-      - "127.0.0.1:6379:6379"
+      - "6379:6379"
     volumes:
       - ./scripts/redis/:/etc/redis/
     command: ["redis-server", "/etc/redis/redis.conf"]
