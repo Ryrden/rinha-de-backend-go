@@ -12,11 +12,13 @@ type Config struct {
 }
 
 type Database struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Name     string
+	Host               string
+	Port               string
+	User               string
+	Password           string
+	Name               string
+	Max_db_connections string
+	Min_db_connections string
 }
 
 type Cache struct {
@@ -39,11 +41,13 @@ type Profiling struct {
 func NewConfig() *Config {
 	return &Config{
 		Database: Database{
-			Host:     env.GetEnvOrDie("DB_HOST"),
-			Port:     env.GetEnvOrDie("DB_PORT"),
-			User:     env.GetEnvOrDie("DB_USER"),
-			Password: env.GetEnvOrDie("DB_PASSWORD"),
-			Name:     env.GetEnvOrDie("DB_NAME"),
+			Host:               env.GetEnvOrDie("DB_HOST"),
+			Port:               env.GetEnvOrDie("DB_PORT"),
+			User:               env.GetEnvOrDie("DB_USER"),
+			Password:           env.GetEnvOrDie("DB_PASSWORD"),
+			Name:               env.GetEnvOrDie("DB_NAME"),
+			Max_db_connections: env.GetEnvOrDie("MAX_DB_CONNECTIONS"),
+			Min_db_connections: env.GetEnvOrDie("MIN_DB_CONNECTIONS"),
 		},
 		Cache: Cache{
 			Host: env.GetEnvOrDie("CACHE_HOST"),

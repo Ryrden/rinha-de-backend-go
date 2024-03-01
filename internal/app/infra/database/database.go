@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,11 +32,14 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			log.Fatalf("Error parsing the connection URL: %s\n", err)
 		}
 
-<<<<<<< HEAD
-		poolConfig.MaxConns = 20
-=======
-		//poolConfig.MaxConns = 15
->>>>>>> e61c2c8 (feat: best so far!)
+		if config.Database.Max_db_connections != "" && config.Database.Min_db_connections != "" {
+			if maxConnections, err := strconv.ParseInt(config.Database.Max_db_connections, 10, 64); err == nil {
+				poolConfig.MaxConns = int32(maxConnections)
+			}
+			if minConnections, err := strconv.ParseInt(config.Database.Min_db_connections, 10, 64); err == nil {
+				poolConfig.MinConns = int32(minConnections)
+			}
+		}
 
 		db, err = pgxpool.NewWithConfig(context.Background(), poolConfig)
 		if err != nil {
