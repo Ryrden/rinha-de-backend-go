@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.3
 	github.com/joho/godotenv v1.5.1
-	github.com/redis/rueidis v1.0.28
+	github.com/redis/rueidis v1.0.31
 	github.com/valyala/fasthttp v1.51.0
 	go.uber.org/fx v1.20.1
 )
@@ -34,7 +34,6 @@ require (
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

@@ -59,15 +59,6 @@ func (c *ClientController) CreateTransaction(ctx fiber.Ctx) error {
 		})
 	}
 
-	// OLD VALIDATION USING VALIDATOR PACKAGE
-	// validator := validator.New()
-	// if err := validator.Struct(dto); err != nil {
-	// 	log.Warnf("Validation failed for CreateTransaction, client ID: %s, error: %s", id, err)
-	// 	return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
-	// 		"error": "Validation failed",
-	// 	})
-	// }
-
 	if err := c.validate(dto); err != nil {
 		log.Warnf("Validation failed for CreateTransaction, client ID: %s, error: %s", id, err)
 		return ctx.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{

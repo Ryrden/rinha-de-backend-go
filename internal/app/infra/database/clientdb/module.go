@@ -6,9 +6,7 @@ import (
 )
 
 var Module = fx.Provide(
-	NewCache,
-	NewDispatcher,
-	NewJobQueue,
+	// NewCache,
 	fx.Annotate(
 		NewClientRepository,
 		fx.As(new(client.Repository)),

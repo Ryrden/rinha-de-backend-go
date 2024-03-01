@@ -12,9 +12,7 @@ import (
 )
 
 type ClientRepository struct {
-	db       *pgxpool.Pool
-	cache    *Cache
-	jobQueue JobQueue
+	db *pgxpool.Pool
 }
 
 func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
@@ -41,38 +39,14 @@ func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
 	return &clientResult, nil
 }
 
-func (c *ClientRepository) FindByIDWithTransaction(tx pgx.Tx, id string) (*client.Client, error) {
-	log.Infof("Attempting to find client by ID: %s", id)
-
-	var clientResult client.Client
-
-	log.Infof("Fetching client from database: %s", id)
-	err := tx.QueryRow(
-		context.Background(),
-		"SELECT id, balance_limit, balance FROM clients WHERE id = $1 FOR UPDATE", // Pessimist locking with "FOR UPDATE"
-		id,
-	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, client.ErrClientNotFound
-		}
-
-		log.Errorf("Error finding client by ID: %s, error: %s", id, err)
-		return nil, err
-	}
-
-	log.Infof("Client successfully found and returned: %s", id)
-	return &clientResult, nil
-}
-
 func (c *ClientRepository) UpdateBalance(tx pgx.Tx, client *client.Client) error {
 	log.Infof("Updating client balance: %s", client.ID)
-	err := tx.QueryRow(
+	_, err := tx.Exec(
 		context.Background(),
 		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
 		client.Balance,
 		client.ID,
-	).Scan(&client.Balance)
+	)
 	if err != nil {
 		log.Errorf("Error updating client: %s", err)
 		return err
@@ -95,10 +69,27 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	defer tx.Rollback(context.Background())
 
 	// Fetch client from database
-	clientResult, err := c.FindByIDWithTransaction(tx, clientID)
+	log.Infof("Attempting to find client by ID: %s", clientID)
+
+	var clientResult client.Client
+	log.Infof("Fetching client from database: %s", clientID)
+	err = tx.QueryRow(
+		context.Background(),
+		"SELECT id, balance_limit, balance FROM clients WHERE id = $1 FOR UPDATE", // Pessimist locking with "FOR UPDATE"
+		clientID,
+	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, client.ErrClientNotFound
+		}
+
+		log.Errorf("Error finding client by ID: %s, error: %s", clientID, err)
 		return nil, err
 	}
+	// clientResult, err := c.FindByID(clientID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Check if client can afford the transaction
 	log.Infof("Checking if client can afford the transaction: %s, value: %d, kind: %s", clientID, value, kind)
@@ -109,7 +100,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 
 	// Update client balance
 	clientResult.AddTransaction(value, kind)
-	err = c.UpdateBalance(tx, clientResult)
+	err = c.UpdateBalance(tx, &clientResult)
 	if err != nil {
 		log.Errorf("Error updating client: %s, error: %s", clientID, err)
 		return nil, err
@@ -198,10 +189,8 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	return transactions, nil
 }
 
-func NewClientRepository(db *pgxpool.Pool, jobQueue JobQueue, cache *Cache) client.Repository {
+func NewClientRepository(db *pgxpool.Pool) client.Repository {
 	return &ClientRepository{
-		db:       db,
-		jobQueue: jobQueue,
-		cache:    cache,
+		db: db,
 	}
 }
