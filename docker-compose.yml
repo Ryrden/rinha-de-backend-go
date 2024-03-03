@@ -19,8 +19,10 @@ services:
       - CACHE_HOST=cache
       - CACHE_PORT=6379
       - SERVER_PORT=8080
-      - ENABLE_PROFILING=1
+      - ENABLE_PROFILING=0
       - ENABLE_PREFORK=0
+      - MAX_DB_CONNECTIONS=20
+      - MIN_DB_CONNECTIONS=12
     
     volumes:
       - ./prof:/app/prof
@@ -36,7 +38,7 @@ services:
       resources:
         limits:
           cpus: "0.35"
-          memory: "140MB"
+          memory: "50MB"
 
   api02:
     # Essa sintaxe reusa o que foi declarado em 'api01'.
@@ -94,7 +96,7 @@ services:
           # de memória. A distribuição feita aqui é apenas
           # um exemplo – distribua como quiser.
           cpus: "0.7"
-          memory: "200MB"
+          memory: "380MB"
 
 # O uso do modo `bridge` deve ser adequado à carga que será usada no teste.
 # A edição anterior se beneficiou do modo host pois o volume de requisições

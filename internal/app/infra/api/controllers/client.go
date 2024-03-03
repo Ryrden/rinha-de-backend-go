@@ -117,6 +117,7 @@ func (c *ClientController) GetClientExtract(ctx fiber.Ctx) error {
 	log.Infof("Successfully retrieved client extract for client ID: %s", id)
 	return ctx.Status(fiber.StatusOK).JSON(clientExtract)
 }
+
 func NewClientController(
 	createTransaction *client.CreateTransaction,
 	getClientExtract *client.GetClientExtract,

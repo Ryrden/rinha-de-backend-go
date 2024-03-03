@@ -15,47 +15,6 @@ type ClientRepository struct {
 	db *pgxpool.Pool
 }
 
-func (c *ClientRepository) FindByID(id string) (*client.Client, error) {
-	log.Infof("Attempting to find client by ID: %s", id)
-
-	var clientResult client.Client
-
-	log.Infof("Fetching client from database: %s", id)
-	err := c.db.QueryRow(
-		context.Background(),
-		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
-		id,
-	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, client.ErrClientNotFound
-		}
-
-		log.Errorf("Error finding client by ID: %s, error: %s", id, err)
-		return nil, err
-	}
-
-	log.Infof("Client successfully found and returned: %s", id)
-	return &clientResult, nil
-}
-
-func (c *ClientRepository) UpdateBalance(tx pgx.Tx, client *client.Client) error {
-	log.Infof("Updating client balance: %s", client.ID)
-	_, err := tx.Exec(
-		context.Background(),
-		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
-		client.Balance,
-		client.ID,
-	)
-	if err != nil {
-		log.Errorf("Error updating client: %s", err)
-		return err
-	}
-
-	log.Infof("Client balance successfully updated: %s", client.ID)
-	return nil
-}
-
 func (c *ClientRepository) CreateTransaction(clientID string, value int, kind string, description string) (*models.ClientTransactionResponse, error) {
 	log.Infof("Creating transaction for client %s", clientID)
 
@@ -70,7 +29,6 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 
 	// Fetch client from database
 	log.Infof("Attempting to find client by ID: %s", clientID)
-
 	var clientResult client.Client
 	log.Infof("Fetching client from database: %s", clientID)
 	err = tx.QueryRow(
@@ -86,10 +44,6 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 		log.Errorf("Error finding client by ID: %s, error: %s", clientID, err)
 		return nil, err
 	}
-	// clientResult, err := c.FindByID(clientID)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	// Check if client can afford the transaction
 	log.Infof("Checking if client can afford the transaction: %s, value: %d, kind: %s", clientID, value, kind)
@@ -100,7 +54,13 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 
 	// Update client balance
 	clientResult.AddTransaction(value, kind)
-	err = c.UpdateBalance(tx, &clientResult)
+	log.Infof("Updating client balance: %s", clientID)
+	_, err = tx.Exec(
+		context.Background(),
+		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
+		clientResult.Balance,
+		clientResult.ID,
+	)
 	if err != nil {
 		log.Errorf("Error updating client: %s, error: %s", clientID, err)
 		return nil, err
@@ -140,8 +100,19 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 
 	var transactions = new(models.GetClientExtractResponse)
 
-	clientResult, err := c.FindByID(clientID)
+	var clientResult client.Client
+	log.Infof("Fetching client from database: %s", clientID)
+	err := c.db.QueryRow(
+		context.Background(),
+		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
+		clientID,
+	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, client.ErrClientNotFound
+		}
+
+		log.Errorf("Error finding client by ID: %s, error: %s", clientID, err)
 		return nil, err
 	}
 
