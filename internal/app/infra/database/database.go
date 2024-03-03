@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ryrden/rinha-de-backend-go/internal/app/infra/config"
@@ -38,6 +39,9 @@ func NewPostgresDatabase(config *config.Config) *pgxpool.Pool {
 			}
 			if minConnections, err := strconv.ParseInt(config.Database.Min_db_connections, 10, 64); err == nil {
 				poolConfig.MinConns = int32(minConnections)
+			}
+			if maxIdleTime, err := strconv.ParseInt(config.Database.Max_idle_time, 10, 64); err == nil {
+				poolConfig.MaxConnIdleTime = time.Duration(maxIdleTime) * time.Millisecond
 			}
 		}
 

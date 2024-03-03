@@ -19,6 +19,7 @@ type Database struct {
 	Name               string
 	Max_db_connections string
 	Min_db_connections string
+	Max_idle_time      string
 }
 
 type Cache struct {
@@ -48,6 +49,7 @@ func NewConfig() *Config {
 			Name:               env.GetEnvOrDie("DB_NAME"),
 			Max_db_connections: env.GetEnvOrDie("MAX_DB_CONNECTIONS"),
 			Min_db_connections: env.GetEnvOrDie("MIN_DB_CONNECTIONS"),
+			Max_idle_time:      env.GetEnvOrDie("MAX_IDLE_TIME"),
 		},
 		Cache: Cache{
 			Host: env.GetEnvOrDie("CACHE_HOST"),

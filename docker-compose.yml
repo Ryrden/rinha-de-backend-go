@@ -23,6 +23,7 @@ services:
       - ENABLE_PREFORK=0
       - MAX_DB_CONNECTIONS=20
       - MIN_DB_CONNECTIONS=12
+      - MAX_IDLE_TIME=1000 # in milliseconds
     
     volumes:
       - ./prof:/app/prof

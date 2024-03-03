@@ -57,7 +57,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Updating client balance: %s", clientID)
 	_, err = tx.Exec(
 		context.Background(),
-		"UPDATE clients SET balance = $1 WHERE id = $2 RETURNING balance",
+		"UPDATE clients SET balance = $1 WHERE id = $2",
 		clientResult.Balance,
 		clientResult.ID,
 	)
