@@ -13,6 +13,11 @@ Repositório da competição [aqui](https://github.com/zanfranceschi/rinha-de-ba
 - Postgres
 - Nginx
 
+## Como rodar
+
+1. Builde a imagem docker da aplicação com o comando `docker buildx build --platform linux/amd64 -t ryrden/rinha-de-backend-go:latest .`
+2. Execute o script `./restart-container.ps1` Caso esteja no Linux, execute o comando `docker-compose up -d` na raiz do projeto.
+
 ## Minhas redes
 
 - [LinkedIn](https://www.linkedin.com/in/ryan25/)
