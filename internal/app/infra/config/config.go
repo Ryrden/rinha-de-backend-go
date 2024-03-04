@@ -4,8 +4,6 @@ import "github.com/ryrden/rinha-de-backend-go/pkg/env"
 
 type Config struct {
 	Database Database
-
-	// TODO: Config this later
 	Cache     Cache
 	Server    Server
 	Profiling Profiling
@@ -58,7 +56,6 @@ func NewConfig() *Config {
 		Server: Server{
 			Port:     env.GetEnvOrDie("SERVER_PORT"),
 			UseSonic: env.GetEnvOrDie("ENABLE_SONIC_JSON") == "1",
-			Prefork:  env.GetEnvOrDie("ENABLE_PREFORK") == "1",
 		},
 		Profiling: Profiling{
 			Enabled: env.GetEnvOrDie("ENABLE_PROFILING") == "1",

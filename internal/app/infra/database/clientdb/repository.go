@@ -33,7 +33,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Fetching client from database: %s", clientID)
 	err = tx.QueryRow(
 		context.Background(),
-		"SELECT id, balance_limit, balance FROM clients WHERE id = $1 FOR UPDATE", // Pessimist locking with "FOR UPDATE"
+		PessimistLockingClientQuery,
 		clientID,
 	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
@@ -57,7 +57,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Updating client balance: %s", clientID)
 	_, err = tx.Exec(
 		context.Background(),
-		"UPDATE clients SET balance = $1 WHERE id = $2",
+		UpdateClientBalanceQuery,
 		clientResult.Balance,
 		clientResult.ID,
 	)
@@ -70,7 +70,7 @@ func (c *ClientRepository) CreateTransaction(clientID string, value int, kind st
 	log.Infof("Inserting transaction record for client: %s, value: %d, kind: %s", clientID, value, kind)
 	_, err = tx.Exec(
 		context.Background(),
-		"INSERT INTO transactions(client_id, amount, kind, description) VALUES($1, $2, $3, $4)",
+		InsertTransactionQuery,
 		clientID,
 		value,
 		kind,
@@ -104,7 +104,7 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	log.Infof("Fetching client from database: %s", clientID)
 	err := c.db.QueryRow(
 		context.Background(),
-		"SELECT id, balance_limit, balance FROM clients WHERE id = $1",
+		GetClientExtractQuery,
 		clientID,
 	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
@@ -125,7 +125,7 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	log.Infof("Fetching last 10 transactions for clientID: %s", clientID)
 	rows, err := c.db.Query(
 		context.Background(),
-		"SELECT amount, kind, description, created_at FROM transactions WHERE client_id = $1 ORDER BY created_at DESC LIMIT 10",
+		GetClientExtractQuery,
 		clientID,
 	)
 	if err != nil {

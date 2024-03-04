@@ -18,8 +18,6 @@ func MakeRouter(
 	cfg := fiber.Config{
 		AppName:       "rinha-go by @ryrden",
 		CaseSensitive: true,
-		// FIXME: This is not working
-		// Prefork: config.Server.Prefork,
 	}
 
 	if config.Server.UseSonic {
@@ -29,10 +27,6 @@ func MakeRouter(
 	}
 
 	r := fiber.New(cfg)
-
-	// r.Use(logger.New(logger.Config{
-	// 	Format: "${pid} ${locals:requestid} ${status} - ${method} ${path}​\n",
-	// }))
 
 	clientRouter.Load(r)
 
