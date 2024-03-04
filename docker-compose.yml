@@ -16,17 +16,14 @@ services:
       - DB_PORT=5432
       - CPU_PROFILE=/app/prof/cpu-1.prof
       - MEM_PROFILE=/app/prof/mem-1.prof
-      - CACHE_HOST=cache
-      - CACHE_PORT=6379
       - SERVER_PORT=8080
       - ENABLE_PROFILING=0
-      - ENABLE_PREFORK=0
       - MAX_DB_CONNECTIONS=20
       - MIN_DB_CONNECTIONS=12
       - MAX_IDLE_TIME=1000 # in milliseconds
     
-    volumes:
-      - ./prof:/app/prof
+    # volumes:
+    #   - ./prof:/app/prof
     # Não é necessário expor qualquer porta além da porta do load balancer,
     # mas é comum as pessoas o fazerem para testarem suas APIs e conectarem
     # ao banco de dados na fase de desenvolvimento.
