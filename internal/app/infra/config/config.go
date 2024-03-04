@@ -4,7 +4,6 @@ import "github.com/ryrden/rinha-de-backend-go/pkg/env"
 
 type Config struct {
 	Database Database
-	Cache     Cache
 	Server    Server
 	Profiling Profiling
 }
@@ -18,11 +17,6 @@ type Database struct {
 	Max_db_connections string
 	Min_db_connections string
 	Max_idle_time      string
-}
-
-type Cache struct {
-	Host string
-	Port string
 }
 
 type Server struct {
@@ -48,10 +42,6 @@ func NewConfig() *Config {
 			Max_db_connections: env.GetEnvOrDie("MAX_DB_CONNECTIONS"),
 			Min_db_connections: env.GetEnvOrDie("MIN_DB_CONNECTIONS"),
 			Max_idle_time:      env.GetEnvOrDie("MAX_IDLE_TIME"),
-		},
-		Cache: Cache{
-			Host: env.GetEnvOrDie("CACHE_HOST"),
-			Port: env.GetEnvOrDie("CACHE_PORT"),
 		},
 		Server: Server{
 			Port:     env.GetEnvOrDie("SERVER_PORT"),

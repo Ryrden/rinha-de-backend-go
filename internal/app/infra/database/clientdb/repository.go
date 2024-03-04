@@ -104,7 +104,7 @@ func (c *ClientRepository) GetClientExtract(clientID string) (*models.GetClientE
 	log.Infof("Fetching client from database: %s", clientID)
 	err := c.db.QueryRow(
 		context.Background(),
-		GetClientExtractQuery,
+		GetClientQuery,
 		clientID,
 	).Scan(&clientResult.ID, &clientResult.Limit, &clientResult.Balance)
 	if err != nil {
