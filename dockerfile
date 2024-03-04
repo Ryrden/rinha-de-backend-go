@@ -23,9 +23,5 @@ EXPOSE 8080
 # Copy files from builder stage
 COPY --from=builder /app/bin/rinha .
 
-# Increase GC percentage and limit the number of OS threads
-# ENV GOGC 1000
-# ENV GOMAXPROCS 3
-
 # Run binary
 CMD ["/rinha"]
