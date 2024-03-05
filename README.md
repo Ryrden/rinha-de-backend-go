@@ -1,5 +1,8 @@
 # Rinha de Back-end 2024 (Q1)
 
+![Gatling result](https://github.com/Ryrden/rinha-de-backend-go/assets/76923948/e1b5239b-c49c-4a63-a0c5-6bed908d5029)
+
+
 > [PT] ⚠️ O código deste repositório não deve ser utilizado como referência para ambientes de produção. Algumas práticas foram aplicadas especificamente em prol da competição, e podem não ser saudáveis para sua aplicação.
 >
 > [EN] ⚠️ This code should not be used as a reference for your production environment. Some of the practices here are not healthy for you application as they were applied to perform in the competition.
