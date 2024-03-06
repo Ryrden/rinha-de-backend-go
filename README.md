@@ -1,7 +1,8 @@
 # Rinha de Back-end 2024 (Q1)
 
-![Gatling result](https://github.com/Ryrden/rinha-de-backend-go/assets/76923948/e1b5239b-c49c-4a63-a0c5-6bed908d5029)
+[![wakatime](https://wakatime.com/badge/user/ed84c523-3e63-43f7-b210-066a9dd37830/project/018d9837-481f-49d8-a592-e6892081cfab.svg)](https://wakatime.com/badge/user/ed84c523-3e63-43f7-b210-066a9dd37830/project/018d9837-481f-49d8-a592-e6892081cfab)
 
+![Gatling result](https://github.com/Ryrden/rinha-de-backend-go/assets/76923948/e1b5239b-c49c-4a63-a0c5-6bed908d5029)
 
 > [PT] ⚠️ O código deste repositório não deve ser utilizado como referência para ambientes de produção. Algumas práticas foram aplicadas especificamente em prol da competição, e podem não ser saudáveis para sua aplicação.
 >
